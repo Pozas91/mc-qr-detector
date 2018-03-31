@@ -1,14 +1,15 @@
+from operator import itemgetter
 import cv2
 import numpy as np
 import math
 
-# The smallest contour of FIP is the contour of a 3*3 modules.
+# El menor contorno de un FIP is el contorno que tiene un módulo de 3*3.
 t = 3 * 3
 
 
 def center_contours(contour: np.ndarray) -> (int, int):
     """
-    Returns centroid of the contour given.
+    Devolvemos el centro del contorno dado.
     :param contour:
     :return:
     """
@@ -21,7 +22,7 @@ def center_contours(contour: np.ndarray) -> (int, int):
 
 def distance_between_centers(center_1: (int, int), center_2: (int, int)) -> float:
     """
-    Returns the distance between two centers given.
+    Devolvemos la distancia entre los dos centros dados.
     :param center_1:
     :param center_2:
     :return:
@@ -31,7 +32,7 @@ def distance_between_centers(center_1: (int, int), center_2: (int, int)) -> floa
 
 def ratio_criterion(ratio: float, epsilon: float) -> bool:
     """
-    Check if ratio given satisfy ratio criterion
+    Comprobamos si el radio dado satisface el criterio del ratio.
     :param ratio:
     :param epsilon:
     :return:
@@ -41,7 +42,7 @@ def ratio_criterion(ratio: float, epsilon: float) -> bool:
 
 def length_criterion(length: float) -> bool:
     """
-    Check if the length given satisfy length criterion
+    Comprobamos si el area dada satisface el criterio de longitud.
     :param length:
     :param t:
     :return:
@@ -51,7 +52,7 @@ def length_criterion(length: float) -> bool:
 
 def overlap_criterion(center_i: (int, int), center_j: (int, int), center_k: (int, int), d: float) -> bool:
     """
-    Check if the three centers satisfy the overlap criterion.
+    Comprobamos si los tres centros satisfacen el criterio de superposición.
     :param center_i:
     :param center_j:
     :param center_k:
@@ -65,7 +66,7 @@ def overlap_criterion(center_i: (int, int), center_j: (int, int), center_k: (int
 
 def contour_sifting(contours: list, epsilon=0.2, distance=10) -> list:
     """
-    Function to simplify contours
+    Devuelve los contornos simplificados.
     :param contours:
     :param epsilon:
     :param distance:
@@ -103,3 +104,62 @@ def contour_sifting(contours: list, epsilon=0.2, distance=10) -> list:
                     valid_contours.append(contours[i])
 
     return valid_contours
+
+
+def remove_duplicates(contours: list) -> list:
+    """
+    Elimina los contornos duplicados.
+    :param contours:
+    :return:
+    """
+    return list({contour.tostring(): contour for contour in contours}.values())
+
+
+def contours_order_by_area(contours: list) -> list:
+    """
+    Devuelve los contornos ordenados por area de manera descendente.
+    :param contours:
+    :return:
+    """
+
+    areas = [(contour, cv2.contourArea(contour)) for contour in contours]
+
+    return sorted(areas, key=itemgetter(1), reverse=True)
+
+
+def take_firsts_contours(contours_with_areas: list, number: int) -> list:
+    """
+    Devuelve los primeros "number" contornos.
+    :param contours_with_areas:
+    :param number:
+    :return:
+    """
+    return [contours for contours, area in contours_with_areas[:number]]
+
+
+def draw_delimiter_rectangle(contours: list, img: np.ndarray, draw: bool):
+    """
+    Método que dibuja un rectángulo que une los contornos si lo deseamos.
+    :param contours:
+    :param img:
+    :param draw:
+    :return:
+    """
+
+    # Si no queremos dibujarlo, simplemente no devolvemos nada
+    if not draw:
+        return
+
+    # Inicializamos los datos
+    height, width, _ = img.shape
+    min_x, min_y = width, height
+    max_x = max_y = 0
+
+    # Dibujamos un recuadro que recoge los puntos del código QR
+    for contour in contours:
+        (x, y, w, h) = cv2.boundingRect(contour)
+        min_x, max_x = min(x, min_x), max(x + w, max_x)
+        min_y, max_y = min(y, min_y), max(y + h, max_y)
+
+    if max_x - min_x > 0 and max_y - min_y > 0:
+        cv2.rectangle(img, (min_x, min_y), (max_x, max_y), (0, 0, 255), 2)
