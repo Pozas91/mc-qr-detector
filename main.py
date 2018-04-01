@@ -1,12 +1,13 @@
 import cv2
 import utils as u
+import numpy as np
 
 """
 SIGUIENDO EL ARTÍCULO
 """
 
 # Leemos la imagen
-img = cv2.imread("assets/File 001.bmp")
+img = cv2.imread("assets/qr.jpg")
 
 # La convertimos a escala de grises.
 img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -32,7 +33,7 @@ contours_with_areas = u.contours_order_by_area(contours)
 
 # Podemos coger los 9 mayores, estos correspondrán con los 9 FIPs del código QR, además si tenemos varios QR,
 # cogerán el más centrado que será el más grande.
-contours = u.take_firsts_contours(contours_with_areas, 9)
+contours = u.take_firsts_contours(contours_with_areas, 3)
 
 # Sacamos una copia de la imagen
 img_qr = img.copy()
@@ -41,13 +42,14 @@ img_qr = img.copy()
 cv2.drawContours(img_qr, contours, -1, (0, 255, 0), 2)
 
 # Dibujamos el rectángulo que envuelve a los contornos
-u.draw_delimiter_rectangle(contours, img_qr, draw=False)
+img_rotated = u.delimiter_and_rotate_rectangle(contours, img_qr)
 
 # Mostramos las imagenes
 cv2.imshow("Original", img)
 cv2.imshow("Gray", img_gray)
 cv2.imshow("Binary", thresh)
 cv2.imshow("Detected QR", img_qr)
+cv2.imshow("Rotated QR", img_rotated)
 
 # Mantenemos abiertas las ventanas hasta que se pulse alguna tecla
 cv2.waitKey(0)

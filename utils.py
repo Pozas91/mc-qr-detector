@@ -2,12 +2,13 @@ from operator import itemgetter
 import cv2
 import numpy as np
 import math
+import imutils
 
 # El menor contorno de un FIP is el contorno que tiene un módulo de 3*3.
 t = 3 * 3
 
 
-def center_contours(contour: np.ndarray) -> (int, int):
+def center_contour(contour: np.ndarray) -> (int, int):
     """
     Devolvemos el centro del contorno dado.
     :param contour:
@@ -97,7 +98,7 @@ def contour_sifting(contours: list, epsilon=0.2, distance=10) -> list:
             for k in (valid_indexes - {i, j}):
 
                 contour_i, contour_j, contour_k = contours[i], contours[j], contours[k]
-                center_i, center_j, center_k = center_contours(contour_i), center_contours(contour_j), center_contours(
+                center_i, center_j, center_k = center_contour(contour_i), center_contour(contour_j), center_contour(
                     contour_k)
 
                 if overlap_criterion(center_i, center_j, center_k, distance):
@@ -137,29 +138,19 @@ def take_firsts_contours(contours_with_areas: list, number: int) -> list:
     return [contours for contours, area in contours_with_areas[:number]]
 
 
-def draw_delimiter_rectangle(contours: list, img: np.ndarray, draw: bool):
-    """
-    Método que dibuja un rectángulo que une los contornos si lo deseamos.
-    :param contours:
-    :param img:
-    :param draw:
-    :return:
-    """
+def delimiter_and_rotate_rectangle(contours: list, img: np.ndarray) -> np.ndarray:
 
-    # Si no queremos dibujarlo, simplemente no devolvemos nada
-    if not draw:
-        return
+    points = contours[0]
 
-    # Inicializamos los datos
-    height, width, _ = img.shape
-    min_x, min_y = width, height
-    max_x = max_y = 0
+    # Unimos los puntos de todos los contornos
+    for contour in contours[1:]:
+        points = np.concatenate((points, contour))
 
-    # Dibujamos un recuadro que recoge los puntos del código QR
-    for contour in contours:
-        (x, y, w, h) = cv2.boundingRect(contour)
-        min_x, max_x = min(x, min_x), max(x + w, max_x)
-        min_y, max_y = min(y, min_y), max(y + h, max_y)
+    rectangle = cv2.minAreaRect(points)
+    box = cv2.boxPoints(rectangle)
+    box = np.int0(box)
 
-    if max_x - min_x > 0 and max_y - min_y > 0:
-        cv2.rectangle(img, (min_x, min_y), (max_x, max_y), (0, 0, 255), 2)
+    cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+
+    (center_x, center_y), (width, height), angle = rectangle
+    return imutils.rotate_bound(img, -(90 + angle))
