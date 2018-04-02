@@ -138,19 +138,43 @@ def take_firsts_contours(contours_with_areas: list, number: int) -> list:
     return [contours for contours, area in contours_with_areas[:number]]
 
 
-def delimiter_and_rotate_rectangle(contours: list, img: np.ndarray) -> np.ndarray:
+def delimiter_and_rotate_rectangle(contours: list, img: np.ndarray, draw=True) -> (np.ndarray, np.ndarray):
 
+    # Hacemos una copia de la imagen para no afectar a la original
+    img_copy = img.copy()
+
+    # Sacamos el primer contorno
     points = contours[0]
 
     # Unimos los puntos de todos los contornos
     for contour in contours[1:]:
         points = np.concatenate((points, contour))
 
+    # Sacamos el mínimo cuadrado que recubre todos los puntos
     rectangle = cv2.minAreaRect(points)
     box = cv2.boxPoints(rectangle)
     box = np.int0(box)
 
-    cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+    # Si queremos dibujarlo, lo dibujamos
+    if draw:
+        cv2.drawContours(img_copy, [box], 0, (0, 0, 255), 2)
 
     (center_x, center_y), (width, height), angle = rectangle
-    return imutils.rotate_bound(img, -(90 + angle))
+
+    # Sacamos el ángulo para enderezar la imagen
+    new_angle = 0.0
+
+    # Hacemos unas pequeñas comprobamos para corregir el ángulo
+    if angle < -45.0:
+        new_angle = -(90 + angle)
+    elif angle >= -45.0:
+        new_angle = -angle
+
+    # Devolvemos la imagen rotada
+    return imutils.rotate_bound(img_copy, new_angle), rectangle
+
+# def crop_image(img: np.ndarray) -> np.ndarray:
+#     x = int(center_x - width / 2)
+#     y = int(center_y - height / 2)
+#
+#     img_copy = img_copy[y: y + int(height), x:x + int(width)]

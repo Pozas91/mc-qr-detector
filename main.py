@@ -1,13 +1,16 @@
 import cv2
 import utils as u
-import numpy as np
+import os
 
 """
 SIGUIENDO EL ARTÍCULO
 """
 
+# Establecemos el fichero
+file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets/File 005.bmp')
+
 # Leemos la imagen
-img = cv2.imread("assets/qr.jpg")
+img = cv2.imread(file)
 
 # La convertimos a escala de grises.
 img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -41,8 +44,12 @@ img_qr = img.copy()
 # Dibujamos los contornos
 cv2.drawContours(img_qr, contours, -1, (0, 255, 0), 2)
 
+# Comprobamos si tenemos contornos que cumplen con las restricciones dadas
+if len(contours) <= 2:
+    raise ValueError('No se han encontrado contornos que cumplan con las restricciones dadas.')
+
 # Dibujamos el rectángulo que envuelve a los contornos
-img_rotated = u.delimiter_and_rotate_rectangle(contours, img_qr)
+img_rotated, rectangle = u.delimiter_and_rotate_rectangle(contours, img_qr)
 
 # Mostramos las imagenes
 cv2.imshow("Original", img)
