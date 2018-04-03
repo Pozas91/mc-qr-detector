@@ -83,13 +83,16 @@ def contour_sifting(contours: list, epsilon=0.2, distance=10) -> list:
 
         x, y, w, h = cv2.boundingRect(contour)
         ratio = float(w) / float(h)
-        area = cv2.contourArea(contour)
 
         if not ratio_criterion(ratio, epsilon):
             f[i] = -1
 
-        if not length_criterion(area):
-            f[i] = -1
+        if f[i] is not -1:
+
+            area = cv2.contourArea(contour)
+
+            if not length_criterion(area):
+                f[i] = -1
 
     valid_indexes = set([i for i, _ in enumerate(f) if f[i] != -1])
 
@@ -123,23 +126,53 @@ def contours_order_by_area(contours: list) -> list:
     :return:
     """
 
-    areas = [(contour, cv2.contourArea(contour)) for contour in contours]
-
-    return sorted(areas, key=itemgetter(1), reverse=True)
+    return sorted(contours, key=cv2.contourArea, reverse=True)
 
 
-def take_firsts_contours(contours_with_areas: list, number: int) -> list:
+def get_qr_fips(contours: list) -> list:
     """
-    Devuelve los primeros "number" contornos.
-    :param contours_with_areas:
-    :param number:
+    Devuelve los contornos que sean parecidos entre sí.
+    :param contours:
     :return:
     """
-    return [contours for contours, area in contours_with_areas[:number]]
+
+    fips = 3
+
+    contours_selected = list()
+
+    # Por cada contorno
+    for a in contours:
+
+        # Añadimos el contorno como base
+        contours_selected.append(a)
+
+        for b in contours:
+
+            # Comprobamos que sea diferente al primero
+            if a is not b:
+
+                # Calculamos el área y el perímetro de los dos
+                area_a = cv2.contourArea(a)
+                area_b = cv2.contourArea(b)
+                perimeter_a = cv2.arcLength(a, True)
+                perimeter_b = cv2.arcLength(b, True)
+
+                # Comprobamos si más o menos (+-10%) tienen el mismo área y el mismo perímetro, si esto es así, podemos
+                # intuir que son la misma figura del mismo tamaño.
+                if (area_b - (area_b * 0.1)) < area_a < (area_b + (area_b * 0.1)) and (perimeter_b - (perimeter_b * 0.1)) < perimeter_a < (perimeter_b + (perimeter_b * 0.1)):
+                    contours_selected.append(b)
+
+        # Si ya lo hemos encontrado dejamos de buscar, si no, vaciamos la lista y empezamos a buscar de nuevo
+        if len(contours_selected) < fips:
+            contours_selected = list()
+        else:
+            break
+
+    # Devolvemos el número de contornos indicados
+    return contours_selected[:fips]
 
 
 def delimiter_and_rotate_rectangle(contours: list, img: np.ndarray, draw=True) -> (np.ndarray, np.ndarray):
-
     # Hacemos una copia de la imagen para no afectar a la original
     img_copy = img.copy()
 

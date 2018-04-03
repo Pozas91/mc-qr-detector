@@ -7,7 +7,7 @@ SIGUIENDO EL ARTÍCULO
 """
 
 # Establecemos el fichero
-file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets/File 005.bmp')
+file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets/File 034.bmp')
 
 # Leemos la imagen
 img = cv2.imread(file)
@@ -32,11 +32,10 @@ EXTRA
 contours = u.remove_duplicates(contours)
 
 # Ordenamos los contornos por area
-contours_with_areas = u.contours_order_by_area(contours)
+contours_ordered = u.contours_order_by_area(contours)
 
-# Podemos coger los 9 mayores, estos correspondrán con los 9 FIPs del código QR, además si tenemos varios QR,
-# cogerán el más centrado que será el más grande.
-contours = u.take_firsts_contours(contours_with_areas, 3)
+# Intentamos extraer los fips del código QR, dados los contornos ordenados.
+contours = u.get_qr_fips(contours_ordered)
 
 # Sacamos una copia de la imagen
 img_qr = img.copy()
@@ -48,7 +47,7 @@ cv2.drawContours(img_qr, contours, -1, (0, 255, 0), 2)
 if len(contours) <= 2:
     raise ValueError('No se han encontrado contornos que cumplan con las restricciones dadas.')
 
-# Dibujamos el rectángulo que envuelve a los contornos
+# Dibujamos el rectángulo y rotamos la imagen que envuelve a los contornos
 img_rotated, rectangle = u.delimiter_and_rotate_rectangle(contours, img_qr)
 
 # Mostramos las imagenes

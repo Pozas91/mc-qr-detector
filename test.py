@@ -39,11 +39,11 @@ for root, dirs, files in os.walk(directory):
         contours = u.remove_duplicates(contours)
 
         # Ordenamos los contornos por area
-        contours_with_areas = u.contours_order_by_area(contours)
+        contours_ordered = u.contours_order_by_area(contours)
 
         # Podemos coger los 9 mayores, estos correspondrán con los 9 FIPs del código QR, además si tenemos varios QR,
         # cogerán el más centrado que será el más grande.
-        contours = u.take_firsts_contours(contours_with_areas, 3)
+        contours = u.get_qr_fips(contours_ordered)
 
         # Sacamos una copia de la imagen
         img_qr = img.copy()
